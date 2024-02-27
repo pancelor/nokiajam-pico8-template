@@ -2,6 +2,16 @@
 <title>PICO-8 Cartridge</title>
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <script type="text/javascript">
+	// based on 0.2.5g default shell
+
+	// note: the clipped region is 0,0 to 83,47 (inclusive)
+	// - this shows the p8 startup logo
+	// - this misses the pause menu
+	// - this misses the popup bar (e.g. "saved screenshot to desktop")
+	// you should suppress the pause menu (`if(btn(6)) poke(0x5f30,1)` in _update) and make your own instead
+
+	// you _could_ show the pause menu region by giving the canvas a div parent with overflow:clip, and set canvas' marginTop negative...
+	// even fancier: swap positions automatically..? yikes don't do this
 
 	var BASE_RES_W=84;
 	var BASE_RES_H=48;
@@ -19,7 +29,7 @@
 	// if the browser can not create an audio context outside of a user gesture (e.g. on iOS), p8_autoplay has no effect
 	var p8_autoplay = false;
 
-	// When pico8_state is defined, PICO-8 will set .is_paused, .sound_volume and .frame_number each frame
+	// When pico8_state is defined, PICO-8 will set .is_paused, .sound_volume and .frame_number each frame 
 	// (used for determining button icons)
 	var pico8_state = [];
 
@@ -35,67 +45,8 @@
 	var pico8_gamepads = {};
 	pico8_gamepads.count = 0;
 
-	class GPIO extends EventTarget {
-    static READ = 'read';
-    static WRITE = 'write';
-    pins = new Array(128);
-
-    get interruptPins() {
-      return new Proxy(this, {
-        get: (object, prop) => {
-          this.dispatchEvent(new ReadEvent(prop));
-
-          return object.pins[prop];
-        },
-        set: (object, prop, value) => {
-          object.pins[prop] = value;
-
-          this.dispatchEvent(new WriteEvent(prop, value));
-        }
-      });
-    }
-  }
-  class ReadEvent extends Event {
-    pin = 0;
-
-    constructor(pin) {
-      super(GPIO.READ);
-      this.pin = Number.parseInt(pin);
-    }
-  }
-  class WriteEvent extends Event {
-    pin = 0;
-    payload = '';
-
-    constructor(pin, payload) {
-      super(GPIO.WRITE);
-      this.pin = Number.parseInt(pin);
-      this.payload = payload;
-    }
-  }
-
 	// When pico8_gpio is defined, reading and writing to gpio pins will read and write to these values
-	var gpio=new GPIO()
-	var pico8_gpio = gpio.interruptPins
-
-	// write url to pins 1...
-	// then set pin 0 to 1 and the url will open
-	gpio.addEventListener(GPIO.WRITE, ev=>{
-		if (ev.pin==0 && ev.payload==1) {
-			var i=0;
-			var url="";
-			while (1) {
-				i+=1;
-				var state=pico8_gpio[i];
-				if (state==undefined) break;
-				url+=String.fromCharCode(state)
-				pico8_gpio[i]=undefined
-			}
-			pico8_gpio[0]=undefined
-			if (!url.startsWith("http")) url="https://"+url
-			window.open(url,'_blank')
-		}
-	})
+	var pico8_gpio = new Array(128);
 
 	// When pico8_audio_context context is defined, the html shell (this file) is responsible for creating and managing it.
 	// This makes satisfying browser requirements easier -- e.g. initialising audio from a short script in response to a user action.
@@ -137,7 +88,7 @@
 	function p8_drop_file(e)
 	{
 		// console.log("@@ dropping file...");
-
+	
 		e.stopPropagation();
 		e.preventDefault();
 
@@ -145,15 +96,19 @@
 		{
 			// read from file
 			reader = new FileReader();
-			reader.onload = function (event) {
-				p8_dropped_cart_name = e.dataTransfer.files[0].name;
+			reader.onload = function (event)
+			{
+				p8_dropped_cart_name = 'untitled.p8';
+				if (typeof e.dataTransfer.files[0].name !== 'undefined') p8_dropped_cart_name = e.dataTransfer.files[0].name;
+				if (typeof e.dataTransfer.files[0].fileName !== 'undefined') p8_dropped_cart_name = e.dataTransfer.files[0].fileName;
 				p8_dropped_cart = reader.result;
 				// data:image/png;base64
 				e.stopPropagation();
 				e.preventDefault();
+				codo_command = 9; // read directly from p8_dropped_cart with libb64 decoder
 			};
 			reader.readAsDataURL(e.dataTransfer.files[0]);
-			codo_command = 9; // read directly from p8_dropped_cart with libb64 decoder
+			
 		}
 		else
 		{
@@ -180,6 +135,23 @@
 		evt.preventDefault();
 		Module.pico8DragStop();
 	}
+
+	// download (pico-8 0.2.4d web exports can save a .wav file)
+	function download_browser_file(filename, contents)
+	{
+	  var element = document.createElement('a');
+	  if (filename.substr(filename.length - 7) == ".p8.png")
+	  	element.setAttribute('href', 'data:image/png;base64,' + encodeURIComponent(contents));
+	  else if (filename.substr(filename.length - 4) == ".wav")
+	  	element.setAttribute('href', 'data:audio/x-wav;base64,' + encodeURIComponent(contents));
+	  else
+	  	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(contents));
+	  element.setAttribute('download', filename);
+	  element.style.display = 'none';
+	  document.body.appendChild(element);
+	  element.click();
+	  document.body.removeChild(element);
+	}
 	// --------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -193,7 +165,7 @@
 			return;
 		}
 		var is_fullscreen=(document.fullscreenElement || document.mozFullScreenElement || document.webkitIsFullScreen || document.msFullscreenElement);
-
+		
 		// hash based on: pico8_state.sound_volume  pico8_state.is_paused bottom_margin left is_fullscreen p8_touch_detected
 		var hash = 0;
 		hash = pico8_state.sound_volume;
@@ -206,7 +178,7 @@
 			requestAnimationFrame(p8_update_button_icons);
 			return;
 		}
-
+		
 		p8_buttons_hash = hash;
 		// console.log("@@ updating button icons");
 
@@ -214,7 +186,7 @@
 		for (i = 0; i < els.length; i++)
 		{
 			el = els[i];
-			index = el.id;
+			index = el.id;			
 			if (index == 'p8b_sound') index += (pico8_state.sound_volume == 0 ? "0" : "1"); // 1 if undefined
 			if (index == 'p8b_pause') index += (pico8_state.is_paused > 0 ? "1" : "0");     // 0 if undefined
 
@@ -226,7 +198,7 @@
 
 
 			// hide all buttons for touch mode (can pause with menu buttons)
-
+			
 			var is_visible = p8_is_running;
 
 			if ((!p8_touch_detected || !p8_allow_mobile_menu) && el.parentElement.id == "p8_menu_buttons_touch")
@@ -235,7 +207,7 @@
 			if (p8_touch_detected && el.parentElement.id == "p8_menu_buttons")
 				is_visible = false;
 
-			if (is_fullscreen)
+			if (is_fullscreen) 
 				is_visible = false;
 
 			if (is_visible)
@@ -252,19 +224,19 @@
 	{
 		return x < 0 ? -x : x;
 	}
-
+	
 	// step 0 down 1 drag 2 up (not used)
 	function pico8_buttons_event(e, step)
 	{
 		if (!p8_is_running) return;
-
+	
 		pico8_buttons[0] = 0;
 
 		if (step == 2 && typeof(pico8_mouse) !== 'undefined')
 		{
 			pico8_mouse[2] = 0;
 		}
-
+		
 		var num = 0;
 		if (e.touches) num = e.touches.length;
 
@@ -274,7 +246,7 @@
 			pico8_mouse[2] = 0;
 		}
 
-
+		
 		for (var i = 0; i < num; i++)
 		{
 			var touch = e.touches[i];
@@ -298,6 +270,11 @@
 
 				if (x >= rect.left && x < rect.right && y >= rect.top && y < rect.bottom)
 				{
+					// TODO: this should use BASE_RES_W/BASE_RES_H
+					//   but it doesn't work plus you shouldn't be using
+					//   mouse anyway in a nokia game, so wontfix.
+					// if you look into this, be sure to do the mouse poke
+					//   in your cart
 					pico8_mouse = [
 						Math.floor((x - rect.left) * 128 / (rect.right - rect.left)),
 						Math.floor((y - rect.top) * 128 / (rect.bottom - rect.top)),
@@ -312,7 +289,7 @@
 
 
 			// buttons
-
+			
 			b = 0;
 
 			if (y < h - r*8)
@@ -327,7 +304,7 @@
 				{
 					// menu button: half as high as X O button
 					// stretch across right-hand half above X O buttons
-					if (x > w - r*3)
+					if (x > w - r*3) 
 						b |= 0x40;
 				}
 				else if (x < w/2 && x < r*6)
@@ -342,7 +319,7 @@
 					var dx = x - cx;
 					var dy = y - cy;
 
-					if (abs(dx) > abs(dy) * 0.6) // horizontal
+					if (abs(dx) > abs(dy) * 0.6) // horizontal 
 					{
 						if (dx < -deadzone) b |= 0x1;
 						if (dx > deadzone) b |= 0x2;
@@ -356,9 +333,9 @@
 				else if (x > w - r*6)
 				{
 					// button; diagonal split from bottom right corner
-
+				
 					mask = 0x30;
-
+					
 					// one or both of [X], [O]
 					if ( (h-y) > (w-x) * 0.8) b |= 0x10;
 					if ( (w-x) > (h-y) * 0.8) b |= 0x20;
@@ -366,7 +343,7 @@
 			}
 
 			pico8_buttons[0] |= b;
-
+		
 		}
 	}
 
@@ -377,12 +354,11 @@
 
 	function p8_update_layout()
 	{
-		var canvas = document.getElementById("nokia_canvas");
-		// var canvas = document.getElementById("canvas");
+		var canvas = document.getElementById("canvas");
 		var p8_playarea = document.getElementById("p8_playarea");
 		var p8_container = document.getElementById("p8_container");
 		var p8_frame = document.getElementById("p8_frame");
-		var cmul = 5;
+		var cmul = 4;
 		var margin_top = 0;
 		var margin_left = 0;
 
@@ -397,7 +373,7 @@
 		p8_layout_frames ++;
 
 		// assumes frame doesn't have padding
-
+		
 		var is_fullscreen=(document.fullscreenElement || document.mozFullScreenElement || document.webkitIsFullScreen || document.msFullscreenElement);
 		var frame_width = p8_frame.offsetWidth;
 		var frame_height = p8_frame.offsetHeight;
@@ -490,7 +466,7 @@
 		// record this for returning to original size after fullscreen pushes out container height (argh)
 		if (!is_fullscreen && p8_frame)
 			last_windowed_container_height = p8_frame.parentNode.parentNode.offsetHeight;
-
+		
 
 		// mobile in portrait mode: put screen at top (w / a little extra space for fullscreen button if needed)
 		// (don't cart too about buttons overlapping screen)
@@ -503,6 +479,8 @@
 
 		canvas.style.width = csizew;
 		canvas.style.height = csizeh;
+		canvas.width = BASE_RES_W;
+		canvas.height = BASE_RES_H;
 
 		// to do: this should just happen from css layout
 		canvas.style.marginLeft = margin_left;
@@ -510,6 +488,10 @@
 
 		p8_container.style.width = csizew;
 		p8_container.style.height = csizeh;
+
+		// set menu buttons position to bottom right
+		el = document.getElementById("p8_menu_buttons");
+		el.style.marginTop = csizeh - el.offsetHeight;
 
 		if (p8_touch_detected && p8_is_running)
 		{
@@ -520,7 +502,7 @@
 			p8_container.style.marginTop = "0px";
 
 			// buttons
-
+			
 			// same as touch event handling
 			var w = window.innerWidth;
 			var h = window.innerHeight;
@@ -543,7 +525,7 @@
 			el.style.height = r*6;
 			if (el.getAttribute("src") != p8_gfx_dat["controls_left_panel"]) // optimisation: avoid reload? (browser should handle though)
 				el.setAttribute("src", p8_gfx_dat["controls_left_panel"]);
-
+			
 			// scroll to cart (commented; was a failed attempt to prevent scroll-on-drag on some browsers)
 			// p8_frame.scrollIntoView(true);
 
@@ -584,18 +566,18 @@
 
 	function p8_create_audio_context()
 	{
-		if (pico8_audio_context)
+		if (pico8_audio_context) 
 		{
 			try {
 				pico8_audio_context.resume();
 			}
 			catch(err) {
 				console.log("** pico8_audio_context.resume() failed");
-			}
+			}	
 			return;
 		}
 
-		var webAudioAPI = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.oAudioContext || window.msAudioContext;
+		var webAudioAPI = window.AudioContext || window.webkitAudioContext || window.mozAudioContext || window.oAudioContext || window.msAudioContext;			
 		if (webAudioAPI)
 		{
 			pico8_audio_context = new webAudioAPI;
@@ -607,7 +589,7 @@
 					var dummy_source_sfx = pico8_audio_context.createBufferSource();
 					dummy_source_sfx.buffer = pico8_audio_context.createBuffer(1, 1, 22050); // dummy
 					dummy_source_sfx.connect(pico8_audio_context.destination);
-					dummy_source_sfx.start(1, 0.25); // gives InvalidStateError -- why? hasn't been played before
+					dummy_source_sfx.start(1, 0.25); // gives InvalidStateError -- why? hasn't been played before 
 					//dummy_source_sfx.noteOn(0); // deleteme
 				}
 				catch(err) {
@@ -619,7 +601,7 @@
 
 	function p8_close_cart()
 	{
-		// just reload page! used for touch buttons -- hard to roll back state
+		// just reload page! used for touch buttons -- hard to roll back state 
 		window.location.hash = ""; // triggers reload
 	}
 
@@ -643,7 +625,7 @@
 			}
 		}
 
-		// create audio context and wake it up (for iOS -- needs happen inside touch event)
+		// create audio context and wake it up (for iOS -- needs happen inside touch event)		
 		p8_create_audio_context();
 
 		// show touch elements
@@ -663,7 +645,7 @@
 		e = document.createElement("script");
 		p8_script = e;
 		e.onload = function(){
-
+			
 			// show canvas / menu buttons only after loading
 			el = document.getElementById("p8_playarea");
 			if (el) el.style.display="table";
@@ -678,7 +660,7 @@
 		e.type = "application/javascript";
 		e.src = "##js_file##";
 		e.id = "e_script";
-
+		
 		document.body.appendChild(e); // load and run
 
 		// hide start button and show canvas / menu buttons. hide start button
@@ -686,7 +668,7 @@
 		if (el) el.style.display="none";
 
 		// add #playing for touchscreen devices (allows back button to close)
-		// X button can also be used to trigger this
+		// X button can also be used to trigger this 
 		if (p8_touch_detected)
 		{
 			window.location.hash = "#playing";
@@ -697,49 +679,23 @@
 			}
 		}
 
-		nokia_run()
-	}
-	function nokia_run() {
-		console.log("nokia_run()");
-		canvas_old=document.getElementById("canvas")
-		ctx_old=canvas_old.getContext("2d");
-
-		canvas_new=document.getElementById("nokia_canvas")
-		canvas_new.width=BASE_RES_W
-		canvas_new.height=BASE_RES_H
-		ctx_new=canvas_new.getContext("2d");
-
-		function blit() {
-			let pixels = ctx_old.getImageData(0,0,BASE_RES_W,BASE_RES_H)
-			for (let i = 0; i < pixels.data.length; i+=4) {
-				if ((pixels.data[i]|pixels.data[i+1]|pixels.data[i+2]) === 0) {
-					// black => #43523D
-					pixels.data[i]=67
-					pixels.data[i+1]=82
-					pixels.data[i+2]=61
-				} else {
-					// else => #C7F0D8
-					pixels.data[i]=199
-					pixels.data[i+1]=240
-					pixels.data[i+2]=216
-				}
+		// install drag&drop listeners
+		{
+			let canvas = document.getElementById("canvas");
+			if (canvas)
+			{
+				canvas.addEventListener('dragenter', dragover, false);
+				canvas.addEventListener('dragover', dragover, false);
+				canvas.addEventListener('dragleave', dragstop, false);
+				canvas.addEventListener('drop', nop, false);
+				canvas.addEventListener('drop', p8_drop_file, false);
 			}
-			ctx_new.putImageData(pixels,0,0)
-			// dunno why this doesn't work
-			// https://developer.mozilla.org/en-US/docs/Web/API/Canvas_API/Tutorial/Drawing_text
-			// ctx_new.fillStyle = 'black';
-			// ctx_new.font = '24px serif';
-			// ctx_new.fillText("hello",0,0)
-
-			requestAnimationFrame(blit)
 		}
-
-		requestAnimationFrame(blit)
 	}
 
-
+	
 		// Gamepad code
-
+	
 	var P8_BUTTON_O = {action:'button', code: 0x10};
 	var P8_BUTTON_X = {action:'button', code: 0x20};
 	var P8_DPAD_LEFT = {action:'button', code: 0x1};
@@ -836,7 +792,7 @@
 		});
 
 		var all_actions = axes_actions.concat(button_actions);
-
+		
 		var menu_button = button_actions.some(function (action) { return action.action == 'menu'; });
 		var button_state = (all_actions
 			.filter(function (a) { return a.action == 'button'; })
@@ -895,7 +851,7 @@
 		});
 
 		any_button |= button_state; //jww: include axes 0,1 as might be first intended action
-
+		
 		return {
 			button_state,
 			menu_button,
@@ -903,7 +859,7 @@
 		};
 	}
 
-
+	
 	// gamepad  https://developer.mozilla.org/en-US/docs/Web/API/Gamepad_API/Using_the_Gamepad_API
 	// (sets bits in pico8_buttons[])
 	function p8_update_gamepads() {
@@ -963,15 +919,16 @@
 	// End of gamepad code
 
 
-	// key blocker. prevent cursor keys from scrolling page while playing cart.
-	// also don't act on M, R so that can mute / reset cart
+	// key blocker. prevent browser operations while playing cart so that PICO-8 can use those keys e.g. cursors to scroll, ctrl-r to reload
 	document.addEventListener('keydown',
 	function (event) {
 		event = event || window.event;
 		if (!p8_is_running) return;
+
 		if (pico8_state.has_focus == 1)
-			if ([32, 37, 38, 39, 40, 77, 82, 80, 9].indexOf(event.keyCode) > -1)       // block cursors, M R P, tab
+			if ([32, 37, 38, 39, 40, 77, 82, 80, 9].indexOf(event.keyCode) > -1)       // block only cursors, M R P, tab
 				if (event.preventDefault) event.preventDefault();
+
 	},{passive: false});
 
 	// when using codo_textarea to determine focus, need to explicitly hand focus back when clicking a p8_menu_button
@@ -1002,7 +959,7 @@
 		    }
 			return;
 		}
-
+		
 		var el = document.getElementById("p8_playarea");
 
 		if ( el.requestFullscreen ) {
@@ -1051,14 +1008,7 @@ canvas{
 
 .p8_start_button{
 	cursor:pointer;
-	background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFQAAAAwCAIAAAAAbMraAAAAAXNSR0IArs4c6QAAAWBJREFUaIHtmlEOgjAQRIvxpCTcgk9uQcJ1vILH8Ah+NCHEalnK7s5IO19GG+TN0u602j1ez1CrbugbQKrB16oGX6vuupcb+2F3zLTMul9aLOXK74JNyzz2g8QjBynDj/0gLCyDBfpzPsMfy/4xGGiByYInr/86HmJBpxtvtwwpP9ty6NrqpmXeZfN8CgB9nscCWMhhsACc8LAWOMHnAYQWaN+Ub+XPWJBmhPMCPPYFFliQB+Ccl1tgRB7Ud3VHFakycTjYzPYoiv08Kt5SwEf5W0AEH3XxeMsj8IKXynNXRwTvf7ZHAY860gTD57HXFHC1kCPBXl8b8QPg5djbNy34XeELsLefqi8NTvBnsCVXKBPFxiYvu14Ag2c4xgbAM2BHucLzYEdZwX/tTPl2dZF4e7Qno+Kt/pY2Q572asmhtZ2UKy+vOcP/Mwx/pf0lBuwoZfj/UtXHWA2+VjX4WvUGkc7DTTn88CoAAAAASUVORK5CYII=");
-	image-rendering: optimizeSpeed;
-	image-rendering: -moz-crisp-edges;
-	image-rendering: -webkit-optimize-contrast;
-	image-rendering: optimize-contrast;
-	image-rendering: pixelated;
-	-ms-interpolation-mode: nearest-neighbor;
-
+	background:url("real_label_url_here");
 	-repeat center;
 	-webkit-background-size:cover; -moz-background-size:cover; -o-background-size:cover; background-size:cover;
 }
@@ -1104,6 +1054,8 @@ canvas{
 		onclick="p8_create_audio_context(); p8_run_cart();">
 
 		<div id="p8_start_button" class="p8_start_button" style="width:100%; height:100%; display:flex;">
+			<img width=80 height=80 style="margin:auto;"
+		src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAFAAAABQCAYAAACOEfKtAAAACXBIWXMAAA7EAAAOxAGVKw4bAAACFklEQVR4nO3bzW3CMBjG8aQTMAYrcODEBoyAxBYcs0WkjMAGnDiwQsfoBvTkynqaEH/7fePnL6Goh6DY/dVRmqTrGGOMMcYYY4y11Ovn+306H98h29rHLqLQyTPb5icydvLsT+2xhNbH7Hw6H/8GPkxjd7tcO5efh2lc/M7Dbh91TKpKIW/pU3tsriUTaDLSPm192rTInAK1iEwu0PS4P2e/O3YypIn8itnZ/Dkubec67PZ9zCRIE1lcIKZdZHGBmHaR1QVi2kQWE+gqRZvIYgJxUK6TJF1ktTVwKyKrCcS0iqx+FjZpFSlGIKZFpBiBmBaRYgViUkWKFYhJFalGIJZT5O1ydb6SUiMQyyXS95++agViKUTa93A2LxCLFWnLa1Ig5iNy7t5NcwIxV5GxN742KxBbEmnGgPexmxeIfRKJ8ijwQyiRa6Bja2dfroELrZ2NuQYu5HMFwjXQynXS8NibXwNdxdlPyNrH2+waGCpurc0LjBXnsnVJncBc4rDNCSwhbpjG7nF/9j6PpYgXKE0cJlagVHGYOIHSxWFiBGoRh1UXqE1c0nzehQt96j72dbK0I/5fcYFNi8Ny/Oali8PEPCPdhDgshQRt4rBqApsUh4XI0C4OyyYwdVLFZbkSCd2vxJVD6sQKlDxpdkkFhu6nSRwmRqCmSbOLOmjzWERowzRWf101tmoCtYpjjDHGGGOMMaa+Xy5nKEcZVjGuAAAAAElFTkSuQmCC"/>
 		</div>
 
 		<div id="p8_playarea" style="display:none; margin:auto;
@@ -1118,26 +1070,32 @@ canvas{
 
 			<div style="display:flex; position:relative">
 				<!-- pointer-events turned off for mobile in p8_update_layout because need for desktop mouse -->
-				<canvas class="emscripten" id="canvas" style="display:none;" oncontextmenu="event.preventDefault();" >
+				<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" >
 				</canvas>
-				<canvas id="nokia_canvas" oncontextmenu="event.preventDefault();" >
-				</canvas>
+				<div class=p8_menu_buttons id="p8_menu_buttons" style="margin-left:10px;">
+					<div class="p8_menu_button" style="position:absolute; bottom:125px" id="p8b_controls" onClick="p8_give_focus(); Module.pico8ToggleControlMenu();"></div>					
+					<div class="p8_menu_button" style="position:absolute; bottom:90px" id="p8b_pause" onClick="p8_give_focus(); Module.pico8TogglePaused(); p8_update_layout_hash = -22;"></div>
+					<div class="p8_menu_button" style="position:absolute; bottom:55px" id="p8b_sound" onClick="p8_give_focus(); p8_create_audio_context(); Module.pico8ToggleSound();"></div>
+					<div class="p8_menu_button" style="position:absolute; bottom:20px" id="p8b_full" onClick="p8_give_focus(); p8_request_fullscreen();"></div>
+				</div>
 			</div>
 
 
 			<!-- display after first layout update -->
 			<div  id="touch_controls_gfx"
-				  style=" pointer-events:none; display:table;
+				  style=" pointer-events:none; display:table; 
 						 position:fixed; top:0px; left:0px; border:0; width:100vw; height:100vh">
 
 					<img src="" id="controls_right_panel" style="position:absolute; opacity:0.5;">
 					<img src="" id="controls_left_panel" style="position:absolute;  opacity:0.5;">
-
-
+						
+			
 			</div> <!-- touch_controls_gfx -->
 
 			<!-- used for clipboard access & keyboard input; displayed and used by PICO-8 only once needed. can be safely removed if clipboard / key presses not needed. -->
 			<!-- (needs to be inside p8_playarea so that it still works under Chrome when fullscreened) -->
+			<!-- 0.2.5: added "display:none"; pico8.js shows on demand to avoid mac osx accent character selector // https://www.lexaloffle.com/bbs/?tid=47743 -->
+
 			<textarea id="codo_textarea" class="emscripten" style="display:none; position:absolute; left:-9999px; height:0px; overflow:hidden"></textarea>
 
 		</div> <!--p8_playarea -->
@@ -1173,7 +1131,7 @@ canvas{
 	}
 
 	// pointer lock request needs to be inside a canvas interaction event
-	// pico8_state.request_pointer_lock is true when 0x5f2d bit 0 and bit 2 are set -- poke(0x5f2d,0x5)
+	// pico8_state.request_pointer_lock is true when 0x5f2d bit 0 and bit 2 are set -- poke(0x5f2d,0x5) 
 	// note on mouse acceleration for future: // https://github.com/w3c/pointerlock/pull/49
 	canvas.addEventListener("click", function()
 	{
@@ -1181,7 +1139,7 @@ canvas{
 			if (pico8_state.request_pointer_lock)
 				canvas.requestPointerLock();
 	});
-
+	
 </script>
 
 
