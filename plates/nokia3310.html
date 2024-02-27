@@ -7,18 +7,16 @@
 	// note: the clipped region is 0,0 to 83,47 (inclusive)
 	// - this shows the p8 startup logo
 	// - this misses the pause menu
+	//   you should suppress the pause menu (`if(btn(6)) poke(0x5f30,1)` in _update)
+	//   and make your own instead
 	// - this misses the popup bar (e.g. "saved screenshot to desktop")
-	// you should suppress the pause menu (`if(btn(6)) poke(0x5f30,1)` in _update) and make your own instead
 
-	// you _could_ show the pause menu region by giving the canvas a div parent with overflow:clip, and set canvas' marginTop negative...
-	// even fancier: swap positions automatically..? yikes don't do this
+	// see https://github.com/pancelor/nokiajam-pico8-template
 
 	var BASE_RES_W=84;
 	var BASE_RES_H=48;
 
 	// Default shell for PICO-8 0.2.2 (includes @weeble's gamepad mod 1.0)
-	// This file is available under a CC0 license https://creativecommons.org/share-your-work/public-domain/cc0/
-	// (note: "this file" does not include any cartridge or cartridge artwork injected into a derivative html file when using the PICO-8 html exporter)
 
 	// options
 
@@ -1010,7 +1008,7 @@ canvas{
 
 .p8_start_button{
 	cursor:pointer;
-	background:url("real_label_url_here");
+	background:url("INSERT BASE64 LABEL DATA HERE");
 	-repeat center;
 	-webkit-background-size:cover; -moz-background-size:cover; -o-background-size:cover; background-size:cover;
 }
