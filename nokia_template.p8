@@ -12,36 +12,51 @@ plx = 42
 ply = 24
 plr = 3
 
-function _update()
+function update_draw()
 	-- read input
 	local dx = tonum(btn(1))-tonum(btn(0))
 	local dy = tonum(btn(3))-tonum(btn(2))
 	-- move
 	plx += dx*2
 	ply += dy*2
+	if btnp(4) then plr+=1 end
+	if btnp(5) then plr-=1 end
 	-- stay inside boundaries
 	plx = mid(plr,83-plr, plx)
 	ply = mid(plr,47-plr, ply)
-end
-
-function _draw()
-	-- nokia3310 stuff
-	if(btn(6)) poke(0x5f30,1)
-	flip() --15fps
-	if(btn(6)) poke(0x5f30,1)
-	camera(-22,-40) --align pause menu
-
-	-- draw game; use colors 1 and 7
+	if btn(6) then
+		poke(0x5f30,1)
+	printh("hello")
+	end
+	-- draw
+	-- use colors 1 and 7
 	cls(1)
 	circfill(plx,ply,plr,7)
+end
 
-	-- dev boundary - purple region will not be visible
+-->8
+-- this must be in the last tab
+
+-- can't use a normal _update/_draw loop
+-- because we want 15fps
+_set_fps(15)
+while 1 do
+	-- suppress pause menu -- black is visible
+	camera(-22,-40) --align pause menu
+
+	update_draw()
+
+	-- dev boundary
+	-- purple region will not be visible
 	rect(-1,-1,84,48,2)
 	fillp(▒)
 	rect(-2,-2,85,49,2)
 	rect(-3,-3,86,50,2)
 	fillp()
+	
+	flip()
 end
+
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

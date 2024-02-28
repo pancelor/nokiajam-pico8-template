@@ -65,6 +65,7 @@ PICO-8's pause menu opens at a fixed location onscreen, which will not be visibl
   - note when porting: the classic 3310 font on the [jam resources page](https://phillipp.itch.io/nokiajamresources) has many small mistakes, e.g. "M" "W" "S"
 - [ ] custom pause menu example
     - nevermind, the screen is centered on the pause menu now. but the color palette is a big issue -- the pause menu is black
+    - one possibility might be [shaders](https://stackoverflow.com/questions/34443968/how-can-i-apply-a-pixel-shader-to-a-canvas-element), instead of editing the palette
 - [ ] proper 15fps
     can't just `flip()` b/c it breaks `btnp()`
 - [ ] sfx example - instr 3 (green) ?
