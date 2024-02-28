@@ -25,16 +25,18 @@ function _update()
 end
 
 function _draw()
+ -- nokia3310 stuff
 	flip() --15fps
-	cls(1)
 
+ -- draw game
+ cls(1)
 	circfill(plx,ply,plr,7)
 
 	-- dev boundary - tan region will not be visible
 	rect(-1,-1,84,48,15)
 	fillp(▒)
-	rect(-1,-1,85,49,15)
-	rect(-1,-1,86,50,15)
+	rect(-2,-2,85,49,15)
+	rect(-3,-3,86,50,15)
 	fillp()
 end
 __gfx__
