@@ -7,6 +7,7 @@ __lua__
 -- based on pancelor's template:
 -- https://github.com/pancelor/nokiajam-pico8-template
 
+
 -- player
 plx = 42
 ply = 24
@@ -29,8 +30,9 @@ function _update()
 end
 
 function _draw()
-	-- draw
 	-- use colors 1 and 7
+	-- draw between 0,0 and 83,47 (inclusive)
+	-- if you use camera() you'll need to look into the last tab
 	cls(1)
 	circfill(plx,ply,plr,7)
 end
@@ -43,14 +45,16 @@ __draw,_draw=_draw,function()
 	-- suppress pause menu -- black is visible
 	if btn(6) then poke(0x5f30,1) end
 
+	-- skip every other frame (15fps)
 	_real_frame=not _real_frame
 	if _real_frame then
-		camera(-22,-40) --align pause menu
+		camera(-22,-40) --align to pause menu
 		__draw()
 	end
 
 	-- dev boundary
 	-- purple region will not be visible
+	camera(-22,-40)
 	rect(-1,-1,84,48,2)
 	fillp(▒)
 	rect(-2,-2,85,49,2)

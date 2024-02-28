@@ -5,15 +5,17 @@ a template + instructions for using the [PICO-8](https://www.lexaloffle.com/pico
 PICO-8 doesn't support changing the resolution or color palette, but this guide will show how to do it anyway (in HTML exports)
 
 ## features
-- [x] nokia color palette
+- [x] nokia3310 color palette
 - [x] 84x48 resolution 
 - [x] 15fps
 
 ## HOW TO MAKE YOUR GAME
-- use colors 1 (dark) and 7 (light). Do not use color 0 (black)
-- draw your game inside the rectangle from 0,0 to 83,47 (inclusive)
-    - anything outside this region will not be seen in the exported game
-    - during development, you may want to `rect(-1,-1,84,48,15)` during `_draw`, so that you can visualize the final area
+- edit `game.p8`
+- the first tab has a bare-bones game with an `_update()` and `_draw()` function as usual
+- draw your game between 0,0 and 83,47 (inclusive)
+    - there's a call to `camera()` in the last tab that will make drawing happen in a central region onscreen (if you want to use camera() yourself you will need to account for this)
+    - the reason it's centered is so that the player can use the pause menu. however, the pause menu uses black pixels which I [don't currently know how to re-color](https://github.com/pancelor/nokiajam-pico8-template/issues/2), so the pause menu is disabled
+- the last tab is "engine code" that makes the project run at 15 fps in the correct position onscreen. you shouldn't need to edit this tab
 
 ## HOW TO EXPORT
 1. intial setup 
@@ -40,19 +42,15 @@ PICO-8 doesn't support changing the resolution or color palette, but this guide 
         - for commmandline folks: edit the [`change-palette.sh`](./change-palette.sh) shell script (you'll need to change a path) and then run it
 
 ## palette
-- the exporting process (described above) replaces the colors 1-15 with the original nokia colors, like this:
+- the exporting process (described above) replaces the colors 1-15 with the nokia3310 colors `#43523d` and `#c7f0d8`, like this:
 
-B | <span style="background:#43523d;color:#ddd">#43523d</span> | D | D
---- | --- | --- | ---
-D | D | L | L
-L | L | L | L
-L | L | L | L
+![color palette; 0 is black, 1-5 are dark green, 6-15 are light green](./palette.png)
 
-D is the darker color <span style="background:#43523d;color:#ddd">#43523d</span>, and L is the lighter color <span style="background:#c7f0d8;color:#222">#c7f0d8</span>. Color 0 [will remain black](https://github.com/pancelor/nokiajam-pico8-template/issues/2) -- **don't use color 0 in your game**. Use colors 1 (dark) and 7 (light) (or any combination of D/L from the table)
+Color 0 [will remain black](https://github.com/pancelor/nokiajam-pico8-template/issues/2) -- **don't use color 0 in your game**. Use colors 1 (dark) and 7 (light) (or any combination of dark+light from the table)
 
 ## license / credits
 - [MIT license](./LICENSE)
-- it's not required, but if you'd like to credit me I'd appreciate it; this took hours to nail down all the specifics. something like "[nokia html template](https://github.com/pancelor/nokiajam-pico8-template) by [pancelor](https://pancelor.itch.io/)". up to you!
+- it's not required, but if you'd like to credit me I'd appreciate it; this took hours to nail down all the specifics. something like "[nokia3310 html template](https://github.com/pancelor/nokiajam-pico8-template) by [pancelor](https://pancelor.itch.io/)". up to you!
 - thanks to [Tobias V. Langhoff](https://itch.io/profile/tobiasvl) and [PaloBlancoGames](https://itch.io/profile/paloblancogames) for initial work figuring out the palette-swapping!
 
 ---
