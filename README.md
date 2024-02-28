@@ -42,16 +42,13 @@ PICO-8 doesn't support changing the resolution or color palette, but this guide 
 ## palette
 - the exporting process (described above) replaces the colors 1-15 with the original nokia colors, like this:
 
-B | D | D | D
+B | <span style="background:#43523d;color:#ddd">#43523d</span> | D | D
 --- | --- | --- | ---
 D | D | L | L
 L | L | L | L
 L | L | L | L
 
-D is the darker color <span style="background:#43523d;color:#ddd">#43523d</span>, and L is the lighter color <span style="background:#c7f0d8;color:#222">#c7f0d8</span>. Color 0 will remain black -- **don't use color 0 in your game**. Use colors 1 (dark) and 7 (light) (or any combination of D/L from the table)
-
-## pause menu
-PICO-8's pause menu opens at a fixed location onscreen, which will not be visible. This is quite awkward for players, so you should suppress the pause menu (`if(btn(6)) poke(0x5f30,1)` inside `_update`) and make your own replacement if needed.
+D is the darker color <span style="background:#43523d;color:#ddd">#43523d</span>, and L is the lighter color <span style="background:#c7f0d8;color:#222">#c7f0d8</span>. Color 0 [will remain black](https://github.com/pancelor/nokiajam-pico8-template/issues/2) -- **don't use color 0 in your game**. Use colors 1 (dark) and 7 (light) (or any combination of D/L from the table)
 
 ## license / credits
 - [MIT license](./LICENSE)
@@ -64,8 +61,6 @@ PICO-8's pause menu opens at a fixed location onscreen, which will not be visibl
 - [ ] custom font
   - note when porting: the classic 3310 font on the [jam resources page](https://phillipp.itch.io/nokiajamresources) has many small mistakes, e.g. "M" "W" "S"
 - [ ] custom pause menu example
-    - nevermind, the screen is centered on the pause menu now. but the color palette is a big issue -- the pause menu is black
+    - nevermind, the screen is centered on the pause menu now. but the color palette is a [big issue](https://github.com/pancelor/nokiajam-pico8-template/issues/2) -- the pause menu is black
     - one possibility might be [shaders](https://stackoverflow.com/questions/34443968/how-can-i-apply-a-pixel-shader-to-a-canvas-element), instead of editing the palette
-- [ ] proper 15fps
-    can't just `flip()` b/c it breaks `btnp()`
 - [ ] sfx example - instr 3 (green) ?

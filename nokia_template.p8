@@ -12,22 +12,23 @@ plx = 42
 ply = 24
 plr = 3
 
-function update_draw()
+function _update()
 	-- read input
 	local dx = tonum(btn(1))-tonum(btn(0))
 	local dy = tonum(btn(3))-tonum(btn(2))
 	-- move
 	plx += dx*2
 	ply += dy*2
-	if btnp(4) then plr+=1 end
-	if btnp(5) then plr-=1 end
 	-- stay inside boundaries
 	plx = mid(plr,83-plr, plx)
 	ply = mid(plr,47-plr, ply)
-	if btn(6) then
-		poke(0x5f30,1)
-	printh("hello")
-	end
+
+	-- grow/shrink
+	if btnp(4) then plr+=1 end
+	if btnp(5) then plr-=1 end
+end
+
+function _draw()
 	-- draw
 	-- use colors 1 and 7
 	cls(1)
@@ -37,14 +38,16 @@ end
 -->8
 -- this must be in the last tab
 
--- can't use a normal _update/_draw loop
--- because we want 15fps
-_set_fps(15)
-while 1 do
+--_real_frame=nil
+__draw,_draw=_draw,function()
 	-- suppress pause menu -- black is visible
-	camera(-22,-40) --align pause menu
+	if btn(6) then poke(0x5f30,1) end
 
-	update_draw()
+	_real_frame=not _real_frame
+	if _real_frame then
+		camera(-22,-40) --align pause menu
+		__draw()
+	end
 
 	-- dev boundary
 	-- purple region will not be visible
@@ -53,8 +56,6 @@ while 1 do
 	rect(-2,-2,85,49,2)
 	rect(-3,-3,86,50,2)
 	fillp()
-	
-	flip()
 end
 
 __gfx__
