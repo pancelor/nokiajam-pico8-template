@@ -64,8 +64,7 @@ PICO-8's pause menu opens at a fixed location onscreen, which will not be visibl
 - [ ] custom font
   - note when porting: the classic 3310 font on the [jam resources page](https://phillipp.itch.io/nokiajamresources) has many small mistakes, e.g. "M" "W" "S"
 - [ ] custom pause menu example
-    - or, use stat(12)..stat(15) to show the pause region? (no, just hardcode and say "use 1 menuitem max")
-    - the html code to reposition the canvas got really hairy when I tried it iirc. plus you miss the cute p8 startup logo. but this would probably be ideal:
-    - [ ] use `camera(-22,-40)` at start of `_draw`
-    - [ ] figure out how to show html. maybe `clip-path: inset(160px 88px);` in canvas css? (needs `cmul` scaling). or 
+    - nevermind, the screen is centered on the pause menu now. but the color palette is a big issue -- the pause menu is black
+- [ ] proper 15fps
+    can't just `flip()` b/c it breaks `btnp()`
 - [ ] sfx example - instr 3 (green) ?

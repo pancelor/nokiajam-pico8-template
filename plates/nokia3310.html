@@ -2,15 +2,8 @@
 <title>PICO-8 Cartridge</title>
 <meta name="viewport" content="width=device-width, user-scalable=no">
 <script type="text/javascript">
+	// nokia3310 pico8 template by pancelor
 	// based on 0.2.5g default shell
-
-	// note: the clipped region is 0,0 to 83,47 (inclusive)
-	// - this shows the p8 startup logo
-	// - this misses the pause menu
-	//   you should suppress the pause menu (`if(btn(6)) poke(0x5f30,1)` in _update)
-	//   and make your own instead
-	// - this misses the popup bar (e.g. "saved screenshot to desktop")
-
 	// see https://github.com/pancelor/nokiajam-pico8-template
 
 	var BASE_RES_W=84;
@@ -414,8 +407,9 @@
 		}
 
 		// console.log("cmul",cmul);
-		var csizew=cmul*BASE_RES_W
-		var csizeh=cmul*BASE_RES_H
+		var csizefull=Math.floor(cmul*128)
+		var csizew=Math.floor(cmul*BASE_RES_W)
+		var csizeh=Math.floor(cmul*BASE_RES_H)
 
 		if (is_fullscreen)
 		{
@@ -475,12 +469,16 @@
 		else
 			p8_playarea.style.marginTop = "";
 
-		canvas.style.width = csizew;
-		canvas.style.height = csizeh;
+		canvas.parentElement.style.width = csizew;
+		canvas.parentElement.style.height = csizeh;
+		canvas.parentElement.style.marginLeft = margin_left;
+		canvas.parentElement.style.marginTop = margin_top;
 
-		// to do: this should just happen from css layout
-		canvas.style.marginLeft = margin_left;
-		canvas.style.marginTop = margin_top;
+		// center canvas (so pause screen is visible)
+		canvas.style.width = csizefull;
+		canvas.style.height = csizefull;
+		canvas.style.marginLeft = -(csizefull-csizew)/2
+		canvas.style.marginTop = -(csizefull-csizeh)/2
 
 		p8_container.style.width = csizew;
 		p8_container.style.height = csizeh;
@@ -651,11 +649,7 @@
 			if (typeof(p8_buttons_hash) !== 'undefined')
 				p8_buttons_hash = -33;
 
-			let canvas = document.getElementById("canvas");
-			if (canvas){
-				canvas.width = BASE_RES_W;
-				canvas.height = BASE_RES_H;
-			}
+
 		}
 		e.type = "application/javascript";
 		e.src = "##js_file##";
@@ -1069,9 +1063,11 @@ canvas{
 			</div>
 
 			<div style="display:flex; position:relative">
-				<!-- pointer-events turned off for mobile in p8_update_layout because need for desktop mouse -->
-				<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" >
-				</canvas>
+				<div style="overflow:clip;">
+					<!-- pointer-events turned off for mobile in p8_update_layout because need for desktop mouse -->
+					<canvas class="emscripten" id="canvas" oncontextmenu="event.preventDefault();" >
+					</canvas>
+				</div>
 				<div class=p8_menu_buttons id="p8_menu_buttons" style="margin-left:10px;">
 					<div class="p8_menu_button" style="position:absolute; bottom:125px" id="p8b_controls" onClick="p8_give_focus(); Module.pico8ToggleControlMenu();"></div>					
 					<div class="p8_menu_button" style="position:absolute; bottom:90px" id="p8b_pause" onClick="p8_give_focus(); Module.pico8TogglePaused(); p8_update_layout_hash = -22;"></div>
