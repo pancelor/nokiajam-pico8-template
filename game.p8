@@ -18,12 +18,18 @@ function _init()
 end
 
 function _update()
+	update_keypad()
+
 	-- read input
 	local dx,dy = 0,0
-	if btn(0) or numpad(7) then dx -= 1 end
-	if btn(1) or numpad(9) then dx += 1 end
-	if btn(2) or numpad(5) then dy -= 1 end
-	if btn(3) or numpad(8) then dy += 1 end
+	if btn(0) or keypad(7) then dx -= 1 end
+	if btn(1) or keypad(9) then dx += 1 end
+	if btn(2) or keypad(5) then dy -= 1 end
+	if btn(3) or keypad(8) then dy += 1 end
+
+	if keypadp(11) then
+		dx,dy = rnd(8)-rnd(8),rnd(8)-rnd(8)
+	end
 
 	-- move
 	if dx~=0 or dy~=0 then
@@ -52,11 +58,11 @@ function _draw()
 	print("\14keypad",1,1,7)
 	print("(qweasd etc)")
 
-	-- draw numpad
+	-- draw keypad
 	for i=1,12 do
-		local char = numpad(i) and "█" or "▒"
+		local char = keypad(i) and "█" or "▒"
 		local x,y = (i-1)%3,(i-1)\3
-		print(char,1+x*9,17+y*7)
+		print(char,5+x*9,17+y*7)
 	end
 
 	spr(1,px,py)
@@ -65,22 +71,46 @@ end
 -->8
 -- tools
 
---  numpad(x) | keyboard
+--  keypad(n) | keyboard
 -- -----------+----------
 --  1  2  3   |  1 2 3
 --  4  5  6   |  q w e
 --  7  8  9   |  a s d
 -- 10 11 12   |  z x c
-function numpad(x)
-	-- https://fossies.org/linux/SDL2/include/SDL_scancode.h
-	local kmap = {30,31,32,20,26,8,4,22,7,29,27,6}
-	local scancode = kmap[tonum(x or 0)]
-	return stat(28,scancode)
+function keypad(n)
+	return _keypad_helper(_keypad_now,n)
+end
+function keypadp(n)
+	return _keypad_helper(_keypad_press,n)
 end
 
 -->8
 -- nokia template
 -- this must be the last tab
+
+_keypad_now,_keypad_press = 0,0
+function update_keypad()
+	local bits = 0
+	-- https://fossies.org/linux/SDL2/include/SDL_scancode.h
+	for i,scancode in ipairs({30,31,32,20,26,8,4,22,7,29,27,6}) do
+		if stat(28,scancode) then
+			bits |= 1<<i-1
+		end
+	end
+	-- arrows
+	for i,dir in ipairs({7,9,5,8}) do
+		if btn(i-1) then
+			bits |= 1<<dir-1
+		end
+	end
+	_keypad_press = bits&~_keypad_now
+	_keypad_now = bits
+end
+function _keypad_helper(bits,n)
+	return not n
+		and bits
+		or bits>>>(n-1)&1==1
+end
 
 _camera,camera=camera,function(x,y)
 	--align to pause menu
