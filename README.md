@@ -5,20 +5,20 @@ A template + instructions for using the [PICO-8](https://www.lexaloffle.com/pico
 PICO-8 doesn't support changing the resolution or color palette, but this guide will show how to do it anyway (in HTML exports)
 
 ## features
-- [x] nokia3310 color palette
-- [x] 84x48 resolution 
-- [x] 15fps
-- [x] classic font
-  - note: the classic 3310 font on the [jam resources page](https://phillipp.itch.io/nokiajamresources) has some small mistakes, e.g. "M" "W" "S"
-- [x] 12-key keypad (QWEASD etc)
+- nokia3310 color palette
+- 84x48 resolution 
+- 15 FPS
+- classic nokia font
+  - note: the classic 3310 font on the [jam resources page](https://phillipp.itch.io/nokiajamresources) has some small mistakes, e.g. "M" "W" "S". They're fixed here.
+- 12-key keypad (QWEASD etc)
+- low token-count (~400)
 
 ## HOW TO MAKE YOUR GAME
 - edit `game.p8`
 - the first tab has a bare-bones game with an `_update()` and `_draw()` function as usual
 - draw your game between 0,0 and 83,47 (inclusive)
-    - there's a call to `camera()` in the last tab that will make drawing happen in a central region onscreen
-    - it's centered so that the player can use the pause menu. however, the pause menu uses black pixels which [I don't currently know how to re-color](https://github.com/pancelor/nokiajam-pico8-template/issues/2), so the pause menu is disabled
-- the last tab is "engine code" that makes the project run at 15 fps in the correct position onscreen. you shouldn't need to edit this tab
+- you can use `keypad(n)` and `keypadp(n)` to read the 12-button keyboard. see the code comments for the button mapping
+- the last tab is "engine code" that does all the magic. you shouldn't need to edit this tab
 
 ## HOW TO EXPORT
 1. intial setup 
@@ -49,10 +49,15 @@ PICO-8 doesn't support changing the resolution or color palette, but this guide 
 
 ![color palette; 0 is black, 1-5 are dark green, 6-15 are light green](./palette.png)
 
-Color 0 [will remain black](https://github.com/pancelor/nokiajam-pico8-template/issues/2) -- **don't use color 0 in your game**. Use colors 1 (dark) and 7 (light) (or any combination of dark+light from the table)
+Color 0 [will remain black](https://github.com/pancelor/nokiajam-pico8-template/issues/2) -- **don't use color 0 (black) in your game**. Use colors 1 (dark) and 7 (light) (or any combination of dark+light from the table)
+
+## pause menu
+`camera()` has been modified to make drawing happen in the center of the screen. this lets the player see the pause menu.
+
+however, the pause menu uses black pixels which [I don't know how to re-color](https://github.com/pancelor/nokiajam-pico8-template/issues/2), so the pause menu is semi-removed. players can still pause by holding down p/enter for 1 second
 
 ## license / credits
-- [MIT license](./LICENSE)
+- [MIT license](./MIT)
 - it's not required, but if you'd like to credit me I'd appreciate it; this took hours to nail down all the specifics. something like "[nokia3310 html template](https://github.com/pancelor/nokiajam-pico8-template) by [pancelor](https://pancelor.com/)". up to you!
 - thanks to [Tobias V. Langhoff](https://itch.io/profile/tobiasvl) and [PaloBlancoGames](https://itch.io/profile/paloblancogames) for initial work figuring out the palette-swapping!
 
