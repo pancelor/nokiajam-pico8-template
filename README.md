@@ -10,6 +10,7 @@ PICO-8 doesn't support changing the resolution or color palette, but this guide 
 - [x] 15fps
 - [x] classic font
   - note: the classic 3310 font on the [jam resources page](https://phillipp.itch.io/nokiajamresources) has some small mistakes, e.g. "M" "W" "S"
+- [x] 12-key keypad (QWEASD etc)
 
 ## HOW TO MAKE YOUR GAME
 - edit `game.p8`
